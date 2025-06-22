@@ -1,0 +1,8 @@
+aiohttp
+tqdm
+mutagen
+python-dotenv
+requests
+pyacoustid
+flask
+musicbrainzngs
