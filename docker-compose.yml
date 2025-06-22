@@ -10,8 +10,6 @@ services:
       # - QOBUZ_API_BASE_URL=https://us.qobuz.squid.wtf
     volumes:
       - ${HOST_DOWNLOADS_DIR:-./downloads}:/app/downloads
-      # Optionally mount your .env file if you want to override/add secrets:
-      - ./my.env:/app/.env
     tty: true
     stdin_open: true
     env_file:
