@@ -60,8 +60,8 @@ TRANSCODE_MAP = {
 LOGGING_ENABLED = os.getenv("LOGGING_ENABLED", "false").lower() == "true"
 
 QOBUZ_API_BASE_URLS = [
-    "https://eu.qobuz.squid.wtf",
-    "https://us.qobuz.squid.wtf"
+    os.getenv("QOBUZ_API_BASE_URL", "https://eu.qobuz.squid.wtf"),
+    os.getenv("QOBUZ_API_BASE_URL_2", "https://us.qobuz.squid.wtf")
 ]
 CURRENT_QOBUZ_API_INDEX = 0
 BASE_URL = QOBUZ_API_BASE_URLS[CURRENT_QOBUZ_API_INDEX]

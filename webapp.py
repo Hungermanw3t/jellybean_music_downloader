@@ -7,11 +7,22 @@ from tagger import tag_file_with_musicbrainz_api, check_fpcalc_readiness, tag_fi
 from utils import clean_filename
 import os
 import musicbrainzngs
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "change_this_secret"  # Needed for session
 
 musicbrainzngs.set_useragent("QobuzSquidDownloader", "1.0", "your@email.com")
+
+LOGIN_PASSWORD = "1234"
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("authenticated"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def search_musicbrainz_releases(artist, album):
     try:
@@ -22,6 +33,7 @@ def search_musicbrainz_releases(artist, album):
         return []
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     if request.method == "POST":
         search_term = request.form["search_term"]
@@ -34,6 +46,7 @@ def index():
     return render_template_string(TEMPLATE_SEARCH)
 
 @app.route("/albums", methods=["GET", "POST"])
+@login_required
 def albums():
     found_items = session.get("found_items", [])
     search_term = session.get("search_term", "")
@@ -67,6 +80,7 @@ def albums():
     return render_template_string(TEMPLATE_ALBUMS, found_items=found_items, search_term=search_term)
 
 @app.route("/tracks", methods=["GET", "POST"])
+@login_required
 def tracks():
     tracks = session.get("album_tracks", [])
     selected_album = session.get("selected_album", {})
@@ -83,6 +97,7 @@ def tracks():
     return render_template_string(TEMPLATE_TRACKS, tracks=tracks, album=selected_album)
 
 @app.route("/select_mb_release", methods=["GET", "POST"])
+@login_required
 def select_mb_release():
     album = session.get("selected_album", {})
     artist = album.get("artist", "")
@@ -104,10 +119,12 @@ fetch("{{ url_for('loading_start') }}", {method: "POST"})
 """
 
 @app.route("/loading")
+@login_required
 def loading():
     return render_template_string(TEMPLATE_LOADING)
 
 @app.route("/done")
+@login_required
 def done():
     return render_template_string(TEMPLATE_DONE)
 
@@ -226,7 +243,29 @@ TEMPLATE_DONE = """
 <a href="{{url_for('index')}}">Back to search</a>
 """
 
+
+TEMPLATE_LOGIN = """
+<h1>Login</h1>
+<form method="post">
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+</form>
+<p style="color:red;">{{ error }}</p>
+"""
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = ""
+    if request.method == "POST":
+        if request.form.get("password") == LOGIN_PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        else:
+            error = "Incorrect password."
+    return render_template_string(TEMPLATE_LOGIN, error=error)
+
 @app.route("/loading/start", methods=["POST"])
+@login_required
 def loading_start():
     tracks = session.get("album_tracks", [])
     selected_indices = session.get("selected_track_indices", [])
