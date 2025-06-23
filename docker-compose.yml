@@ -19,3 +19,6 @@ services:
 
     ports:
       - 5000:5000  # Expose the Flask app port
+
+volumes:
+  - ${HOST_DOWNLOADS_DIR:-./downloads}:/app/downloads

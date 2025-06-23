@@ -23,7 +23,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of your application code
-COPY . .
+COPY . /app
 
 # Expose a volume for downloads (optional, for clarity)
 VOLUME ["/app/downloads"]
