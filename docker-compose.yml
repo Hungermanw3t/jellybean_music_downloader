@@ -8,7 +8,6 @@ services:
       - FLASK_ENV=development
     volumes:
       - ${HOST_DOWNLOADS_DIR:-./downloads}:/app/downloads
-      - .:/app
     tty: true
     stdin_open: true
     env_file:
