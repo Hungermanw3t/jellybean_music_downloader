@@ -3,6 +3,8 @@ services:
     build: .
     image: qobuz-downloader
     container_name: qobuz-downloader
+    ports:
+      - "5000:5000"
     environment:
       - DOWNLOAD_BASE_DIR=/app/downloads
     tty: true
