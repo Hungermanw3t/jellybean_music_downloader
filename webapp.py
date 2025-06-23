@@ -48,36 +48,49 @@ def index():
 @app.route("/albums", methods=["GET", "POST"])
 @login_required
 def albums():
-    found_items = session.get("found_items", [])
     search_term = session.get("search_term", "")
+    search_type = session.get("search_type", "albums")
+    found_items = session.get("found_items", [])
+
     if request.method == "POST":
-        selected_album_idx = int(request.form["selected_album"])
-        selected_album = found_items[selected_album_idx]
-        album_id = selected_album["id"]
-        album_data, tracks = get_album_details(album_id)
-        # Use album_data from API for correct artist/title
-        for t in tracks:
-            t.setdefault('artist', album_data.get('artist', {}).get('name', 'Unknown Artist'))
-            t.setdefault('title', t.get('title', 'Unknown Title'))
-            t.setdefault('id', t.get('id'))
-        print("Tracks fetched:", tracks)  # Debug
-        # Only store minimal album info
-        session["selected_album"] = {
-            "title": album_data.get("title", ""),
-            "artist": album_data.get("artist", {}).get("name", "")
-        }
-        # Only store minimal track info
-        session["album_tracks"] = [
-            {
-                "id": t.get("id"),
-                "title": t.get("title"),
-                "artist": t.get("artist"),
-                "track_number": t.get("track_number")
+        action = request.form.get("action")
+        if action == "search":
+            search_term = request.form["search_term"]
+            search_type = request.form["search_type"]
+            found_items = get_music_info(search_term, music_type=search_type, limit=20)
+            session["found_items"] = found_items
+            session["search_term"] = search_term
+            session["search_type"] = search_type
+        elif action == "select":
+            selected_album_idx = int(request.form["selected_album"])
+            selected_album = found_items[selected_album_idx]
+            album_id = selected_album["id"]
+            album_data, tracks = get_album_details(album_id)
+            for t in tracks:
+                t.setdefault('artist', album_data.get('artist', {}).get('name', 'Unknown Artist'))
+                t.setdefault('title', t.get('title', 'Unknown Title'))
+                t.setdefault('id', t.get('id'))
+            session["selected_album"] = {
+                "title": album_data.get("title", ""),
+                "artist": album_data.get("artist", {}).get("name", "")
             }
-            for t in tracks
-        ]
-        return redirect(url_for("tracks"))
-    return render_template_string(TEMPLATE_ALBUMS, found_items=found_items, search_term=search_term)
+            session["album_tracks"] = [
+                {
+                    "id": t.get("id"),
+                    "title": t.get("title"),
+                    "artist": t.get("artist"),
+                    "track_number": t.get("track_number")
+                }
+                for t in tracks
+            ]
+            return redirect(url_for("tracks"))
+
+    return render_template_string(
+        TEMPLATE_SEARCH_AND_ALBUMS,
+        found_items=found_items,
+        search_term=search_term,
+        search_type=search_type
+    )
 
 @app.route("/tracks", methods=["GET", "POST"])
 @login_required
@@ -108,15 +121,6 @@ def select_mb_release():
         session["selected_mb_release_id"] = selected_mb_id
         return redirect(url_for("loading"))  # <-- Redirect to loading
     return render_template_string(TEMPLATE_MB_RELEASES, releases=releases, album=album)
-
-TEMPLATE_LOADING = """
-<h1>Processing...</h1>
-<p>Your tracks are being downloaded and tagged. This may take a minute. Please wait...</p>
-<script>
-fetch("{{ url_for('loading_start') }}", {method: "POST"})
-  .then(() => window.location = "{{ url_for('done') }}");
-</script>
-"""
 
 @app.route("/loading")
 @login_required
@@ -174,85 +178,6 @@ def download_and_tag_all(
             )
     return inner()
 
-# --- Templates ---
-
-TEMPLATE_SEARCH = """
-<h1>Qobuz Squid Downloader Web UI</h1>
-<form method="post">
-    <input name="search_term" placeholder="Search term" required>
-    <select name="search_type">
-        <option value="albums">Albums</option>
-        <option value="tracks">Tracks</option>
-    </select>
-    <button type="submit">Search</button>
-</form>
-"""
-
-TEMPLATE_ALBUMS = """
-<h1>Albums for '{{search_term}}'</h1>
-<form method="post">
-<ul>
-{% for item in found_items %}
-    <li>
-        <input type="radio" name="selected_album" value="{{loop.index0}}" required>
-        {{item['artist']}} - {{item['title']}}
-    </li>
-{% endfor %}
-</ul>
-<button type="submit">Select Album</button>
-</form>
-<a href="{{url_for('index')}}">Back to search</a>
-"""
-
-TEMPLATE_TRACKS = """
-<h1>Tracks for '{{album.get('artist', '')}} - {{album.get('title', '')}}'</h1>
-<form method="post">
-<ul>
-{% for track in tracks %}
-    <li>
-        <input type="checkbox" name="selected_index" value="{{loop.index0}}">
-        {{track['artist']}} - {{track['title']}}
-    </li>
-{% endfor %}
-</ul>
-<button type="submit">Download & Tag Selected</button>
-<button type="submit" name="download_all" value="1">Download & Tag All</button>
-</form>
-<a href="{{url_for('albums')}}">Back to albums</a>
-"""
-
-TEMPLATE_MB_RELEASES = """
-<h1>Select MusicBrainz Release for '{{album['artist']}} - {{album['title']}}'</h1>
-<form method="post">
-<ul>
-{% for release in releases %}
-    <li>
-        <input type="radio" name="selected_mb_release" value="{{release['id']}}" required>
-        {{release['title']}} ({{release['date'] if release.get('date') else 'Unknown Year'}}) - {{release['country'] if release.get('country') else 'Unknown Country'}}
-    </li>
-{% endfor %}
-</ul>
-<button type="submit">Use Selected Release</button>
-</form>
-<a href="{{url_for('tracks')}}">Back to tracks</a>
-"""
-
-TEMPLATE_DONE = """
-<h1>Done!</h1>
-<p>{{ get_flashed_messages()[0] if get_flashed_messages() else '' }}</p>
-<a href="{{url_for('index')}}">Back to search</a>
-"""
-
-
-TEMPLATE_LOGIN = """
-<h1>Login</h1>
-<form method="post">
-    <input type="password" name="password" placeholder="Password" required>
-    <button type="submit">Login</button>
-</form>
-<p style="color:red;">{{ error }}</p>
-"""
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = ""
@@ -302,6 +227,155 @@ def loading_start():
         loop.close()
     return "", 204  # No Content
 
+# --- Templates (move these up, before any route functions that use them) ---
+
+TEMPLATE_LOADING = """
+<h1>Processing...</h1>
+<p>Your tracks are being downloaded and tagged. This may take a minute. Please wait...</p>
+<script>
+fetch("{{ url_for('loading_start') }}", {method: "POST"})
+  .then(() => window.location = "{{ url_for('done') }}");
+</script>
+"""
+
+TEMPLATE_SEARCH = """
+<h1>Qobuz Squid Downloader Web UI</h1>
+<form method="post">
+    <input name="search_term" placeholder="Search term" required>
+    <select name="search_type">
+        <option value="albums">Albums</option>
+        <option value="tracks">Tracks</option>
+    </select>
+    <button type="submit">Search</button>
+</form>
+"""
+
+TEMPLATE_SEARCH_AND_ALBUMS = """
+<h1>Qobuz Squid Downloader Web UI</h1>
+<form method="post" id="searchForm" style="margin-bottom: 32px;">
+    <input name="search_term" placeholder="Search term" required value="{{search_term|default('')}}">
+    <select name="search_type">
+        <option value="albums" {% if search_type == 'albums' %}selected{% endif %}>Albums</option>
+        <option value="tracks" {% if search_type == 'tracks' %}selected{% endif %}>Tracks</option>
+    </select>
+    <button type="submit" name="action" value="search">Search</button>
+</form>
+
+{% if found_items %}
+<form method="post" id="albumForm">
+    <div style="display: flex; flex-wrap: wrap; gap: 32px; justify-content: flex-start;">
+    {% for item in found_items %}
+        {% set album_id = item['id'] %}
+        {% set seg1 = album_id[-2:] %}
+        {% set seg2 = album_id[-4:-2] %}
+        {% set img_url = 'https://static.qobuz.com/images/covers/' ~ seg1 ~ '/' ~ seg2 ~ '/' ~ album_id ~ '_230.jpg' %}
+        <label class="album-card" style="
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 200px;
+            background: #18181b;
+            border-radius: 12px;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: none;
+            transition: box-shadow 0.2s, border 0.2s;
+            border: 2px solid transparent;
+            ">
+            <input type="radio" name="selected_album" value="{{loop.index0}}" required style="display:none;">
+            <img src="{{img_url}}" alt="Album Art"
+                 style="width: 200px; height: 200px; object-fit: cover; border-radius: 12px 12px 0 0; background: #222;"
+                 onerror="this.onerror=null;this.src='https://via.placeholder.com/200?text=No+Image';">
+            <div title="{{item['title']}}"
+                 style="font-weight: 600; font-size: 1.08em; color: #fff; text-align: left; width: 100%; padding: 12px 12px 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{item['title']}}
+            </div>
+            <div title="{{item['artist']}}"
+                 style="font-size: 0.98em; color: #b3b3b3; text-align: left; width: 100%; padding: 0 12px 12px 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{item['artist']}}
+            </div>
+        </label>
+    {% endfor %}
+    </div>
+    <button type="submit" name="action" value="select" style="margin-top: 32px; font-size: 1.1em; padding: 10px 28px; border-radius: 8px; border: none; background: #fff; color: #18181b; font-weight: bold; cursor: pointer;">Select Album</button>
+</form>
+{% elif search_term %}
+    <p style="color:#b3b3b3;">No albums found for <b>{{search_term}}</b>.</p>
+{% endif %}
+
+<style>
+.album-card.selected-album {
+    border: 2px solid #ffe066 !important;
+    box-shadow: 0 0 0 2px #ffe06633;
+}
+</style>
+<script>
+document.querySelectorAll('input[type=radio][name=selected_album]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('.album-card').forEach(function(card) {
+            card.classList.remove('selected-album');
+        });
+        radio.closest('.album-card').classList.add('selected-album');
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var checked = document.querySelector('input[type=radio][name=selected_album]:checked');
+    if (checked) {
+        checked.closest('.album-card').classList.add('selected-album');
+    }
+});
+</script>
+"""
+
+TEMPLATE_TRACKS = """
+<h1>Tracks for '{{album.get('artist', '')}} - {{album.get('title', '')}}'</h1>
+<form method="post">
+<ul>
+{% for track in tracks %}
+    <li>
+        <input type="checkbox" name="selected_index" value="{{loop.index0}}">
+        {{track['artist']}} - {{track['title']}}
+    </li>
+{% endfor %}
+</ul>
+<button type="submit">Download & Tag Selected</button>
+<button type="submit" name="download_all" value="1">Download & Tag All</button>
+</form>
+<a href="{{url_for('albums')}}">Back to albums</a>
+"""
+
+TEMPLATE_MB_RELEASES = """
+<h1>Select MusicBrainz Release for '{{album['artist']}} - {{album['title']}}'</h1>
+<form method="post">
+<ul>
+{% for release in releases %}
+    <li>
+        <input type="radio" name="selected_mb_release" value="{{release['id']}}" required>
+        <a href="https://musicbrainz.org/release/{{release['id']}}" target="_blank" style="color:#4af;">{{release['title']}}</a>
+        ({{release['date'] if release.get('date') else 'Unknown Year'}}) - {{release['country'] if release.get('country') else 'Unknown Country'}}
+    </li>
+{% endfor %}
+</ul>
+<button type="submit">Use Selected Release</button>
+</form>
+<a href="{{url_for('tracks')}}">Back to tracks</a>
+"""
+
+TEMPLATE_DONE = """
+<h1>Done!</h1>
+<p>{{ get_flashed_messages()[0] if get_flashed_messages() else '' }}</p>
+<a href="{{url_for('index')}}">Back to search</a>
+"""
+
+
+TEMPLATE_LOGIN = """
+<h1>Login</h1>
+<form method="post">
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+</form>
+<p style="color:red;">{{ error }}</p>
+"""
+
 if __name__ == "__main__":
-    os.makedirs(config.DOWNLOAD_BASE_DIR, exist_ok=True)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)

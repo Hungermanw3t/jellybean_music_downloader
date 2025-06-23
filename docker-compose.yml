@@ -5,11 +5,13 @@ services:
     container_name: qobuz-downloader
     environment:
       - DOWNLOAD_BASE_DIR=/app/downloads
+      - FLASK_ENV=development
       # Add other env vars as needed, e.g.:
       # - LOGGING_ENABLED=true
       # - QOBUZ_API_BASE_URL=https://us.qobuz.squid.wtf
     volumes:
       - ${HOST_DOWNLOADS_DIR:-./downloads}:/app/downloads
+      - .:/app  # Mount the current directory to /app in the container
     tty: true
     stdin_open: true
     env_file:
