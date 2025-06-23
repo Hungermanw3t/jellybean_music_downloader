@@ -1,0 +1,10 @@
+# This file is automatically loaded by docker-compose for development
+services:
+  qobuz:
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    volumes:
+      - ./downloads:/app/downloads
+    ports:
+      - "5000:5000"

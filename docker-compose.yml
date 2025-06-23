@@ -5,12 +5,7 @@ services:
     container_name: qobuz-downloader
     environment:
       - DOWNLOAD_BASE_DIR=/app/downloads
-      - FLASK_ENV=development
-    volumes:
-      - ${HOST_DOWNLOADS_DIR:-./downloads}:/app/downloads
     tty: true
     stdin_open: true
     env_file:
       - .env
-    ports:
-      - 5000:5000

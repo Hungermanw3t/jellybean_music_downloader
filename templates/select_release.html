@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select MusicBrainz Release - Qobuz Squid Downloader</title>
+    <style>        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 30px;
+            color: #fff;
+            font-size: 1.8em;
+        }        .release-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px 0;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .release-item {
+            background: #18181b;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            padding: 16px 20px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            text-align: left;
+            cursor: pointer;
+            position: relative;
+        }
+        .release-item:hover {
+            border: 2px solid #666;
+            background: #222;
+        }
+        .release-item.selected {
+            border: 2px solid #ffe066;
+            background: #2a2a2a;        }.release-details {
+            flex: 1;
+            min-width: 0;
+        }
+        .release-title {
+            color: #4af;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: inline-block;
+            word-break: break-word;
+            position: relative;
+            z-index: 10;
+        }
+        .release-title:hover {
+            text-decoration: underline;
+        }
+        .release-meta {
+            color: #b3b3b3;
+            font-size: 0.85em;
+        }
+        .selected-indicator {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffe066;
+            color: #18181b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .release-item.selected .selected-indicator {
+            opacity: 1;
+        }        .button-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .use-release-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #4ade80;
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .use-release-btn.enabled {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .use-release-btn:hover {
+            background: #22c55e;
+            transform: translateY(-1px);
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+            color: #18181b;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .back-link {
+            color: #4af;
+            text-decoration: none;
+            padding: 12px 24px;
+            border: 1px solid #4af;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .back-link:hover {
+            background: #4af;
+            color: #18181b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select MusicBrainz Release for '{{album['artist']}} - {{album['title']}}'</h1>
+          <div class="release-list">        {% for release in releases %}
+            <div class="release-item" data-release-id="{{release['id']}}">
+                <div class="release-details">
+                    <a href="https://musicbrainz.org/release/{{release['id']}}" target="_blank" class="release-title">
+                        {{release['title']}}
+                    </a>
+                    <div class="release-meta">
+                        ({{release['date'] if release.get('date') else 'Unknown Year'}}) - {{release['country'] if release.get('country') else 'Unknown Country'}}
+                    </div>
+                </div>
+                <div class="selected-indicator">✓</div>
+            </div>
+        {% endfor %}
+        </div>
+        
+        <form method="post" id="release-form">
+            <input type="hidden" name="selected_mb_release" id="selected_release_input">
+            <div class="button-container">
+                <button type="submit" class="use-release-btn" id="use-release-btn">Use Selected Release</button>
+                <a href="{{url_for('albums')}}" class="back-link">Back to Albums</a>
+            </div>
+        </form>    </div>    <script>
+        let selectedReleaseId = null;
+        
+        function selectRelease(releaseId, element) {
+            // Remove previous selection
+            document.querySelectorAll('.release-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to clicked item
+            element.classList.add('selected');
+            selectedReleaseId = releaseId;
+            
+            // Update hidden input and enable button
+            document.getElementById('selected_release_input').value = releaseId;
+            document.getElementById('use-release-btn').classList.add('enabled');
+        }
+        
+        // Add click event listeners to release items
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.release-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // Don't trigger selection if clicking on the MusicBrainz link
+                    if (e.target.classList.contains('release-title')) {
+                        return;
+                    }
+                    
+                    const releaseId = this.getAttribute('data-release-id');
+                    selectRelease(releaseId, this);
+                });
+            });
+        });
+        
+        // Prevent form submission if no release is selected
+        document.getElementById('release-form').addEventListener('submit', function(e) {
+            if (!selectedReleaseId) {
+                e.preventDefault();
+                alert('Please select a release first');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search & Select Album - Qobuz Squid Downloader</title>
+    <style>        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0b 0%, #1a1a1d 100%);
+            color: #fff;
+            margin: 0;
+            padding: 20px 20px;
+            min-height: 100vh;
+        }.container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }        h1 {
+            margin-bottom: 30px;
+            color: #fff;
+            background: linear-gradient(135deg, #fff 0%, #b0b0b0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+        .search-form {
+            margin-bottom: 32px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: 32px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+        }
+        select {
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #fff;
+            color: #18181b;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;        }        .albums-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 32px;
+            justify-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 0;
+        }.album-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 200px;
+            background: #18181b;
+            border-radius: 12px;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: none;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .album-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .album-card .album-image {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 12px 12px 0 0;
+        }
+        .album-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+        .album-card:hover img {
+            transform: scale(1.05);
+            filter: blur(2px) brightness(0.7);
+        }
+        .album-card .hover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            backdrop-filter: blur(4px);
+        }
+        .album-card:hover .hover-overlay {
+            opacity: 1;
+        }
+        .album-info-overlay {
+            color: white;
+            text-align: left;
+        }        .album-title-overlay {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 4px;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            /* Fallback for browsers that don't support line-clamp */
+            max-height: 2.4em;
+        }
+        .album-artist-overlay {
+            font-size: 0.9em;
+            color: #e0e0e0;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            /* Fallback for browsers that don't support line-clamp */
+            max-height: 1.2em;
+        }
+        .album-meta {
+            font-size: 0.75em;
+            color: #b0b0b0;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .meta-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            backdrop-filter: blur(4px);
+        }
+        .album-card:hover .hover-overlay {
+            opacity: 1;
+        }        .hover-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }        .hover-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: #fff;
+            font-size: 16px;
+            z-index: 10;
+            position: relative;
+            backdrop-filter: blur(8px);
+        }
+        .hover-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.1);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .download-btn {
+            background: rgba(74, 222, 128, 0.8);
+            border-color: rgba(74, 222, 128, 0.6);
+            color: #fff;
+        }
+        .download-btn:hover {
+            background: rgba(34, 197, 94, 0.9);
+            border-color: rgba(34, 197, 94, 0.8);
+        }
+        .album-info {
+            position: relative;
+            z-index: 1;
+            background: #18181b;
+            border-radius: 0 0 12px 12px;
+        }
+        .album-card input {
+            display: none;
+        }        .album-card img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #222;
+        }        .album-title {
+            font-weight: 600;
+            font-size: 1.08em;
+            color: #fff;
+            text-align: left;
+            width: 100%;
+            padding: 12px 12px 0 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.3;
+            height: 1.3em;
+        }
+        .album-artist {
+            font-size: 0.98em;
+            color: #b3b3b3;
+            text-align: left;
+            width: 100%;
+            padding: 4px 12px 12px 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.2;
+            height: 1.2em;        }
+        .no-results {
+            color: #b3b3b3;
+            text-align: center;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Qobuz Squid Downloader Web UI</h1>
+        
+        <form method="post" class="search-form">
+            <input type="text" name="search_term" placeholder="Search term" required value="{{search_term|default('')}}">
+            <select name="search_type">
+                <option value="albums" {% if search_type == 'albums' %}selected{% endif %}>Albums</option>
+                <option value="tracks" {% if search_type == 'tracks' %}selected{% endif %}>Tracks</option>
+            </select>
+            <button type="submit" name="action" value="search">Search</button>
+        </form>        {% if found_items %}
+        <div class="albums-grid">
+        {% for item in found_items %}
+            {% set album_id = item['id'] %}
+            {% set seg1 = album_id[-2:] %}
+            {% set seg2 = album_id[-4:-2] %}
+            {% set img_url = 'https://static.qobuz.com/images/covers/' ~ seg1 ~ '/' ~ seg2 ~ '/' ~ album_id ~ '_230.jpg' %}            <div class="album-card" data-album-index="{{loop.index0}}">
+                <div class="album-image">
+                    <img src="{{img_url}}" alt="Album Art"
+                         onerror="this.onerror=null;this.src='https://via.placeholder.com/200?text=No+Image';">
+                    <div class="hover-overlay">
+                        <div class="album-info-overlay">
+                            <div class="album-title-overlay">{{item['title']}}</div>
+                            <div class="album-artist-overlay">{{item['artist']}}</div>
+                            <div class="album-meta">
+                                <span class="meta-badge">Album</span>
+                                <span class="meta-badge">FLAC</span>
+                            </div>
+                        </div>
+                        <div class="hover-buttons">
+                            <button type="button" class="hover-btn" title="Track List">
+                                <span>☰</span>
+                            </button>                            
+                                <button type="button" class="hover-btn download-btn" title="Download Album" data-album-index="{{loop.index0}}">
+                                <span>⬇</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="album-info">
+                    <div class="album-title" title="{{item['title']}}">
+                        {{item['title']}}
+                    </div>
+                    <div class="album-artist" title="{{item['artist']}}">
+                        {{item['artist']}}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+        {% elif search_term %}
+            <p class="no-results">No albums found for <b>{{search_term}}</b>.</p>
+        {% endif %}
+    </div>    <script>
+        function downloadAlbum(albumIndex) {
+            // Create a form and submit it to download the album
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = '';
+            
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'select';
+            
+            const albumInput = document.createElement('input');
+            albumInput.type = 'hidden';
+            albumInput.name = 'selected_album';
+            albumInput.value = albumIndex;
+            
+            form.appendChild(actionInput);
+            form.appendChild(albumInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Add event listeners when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.download-btn').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const albumIndex = this.getAttribute('data-album-index');
+                    downloadAlbum(albumIndex);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

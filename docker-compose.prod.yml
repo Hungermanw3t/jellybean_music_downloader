@@ -1,0 +1,11 @@
+# Use this for production: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+services:
+  qobuz:
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+    volumes:
+      - ${HOST_DOWNLOADS_DIR:-/data/music}:/app/downloads
+    ports:
+      - "80:5000"
+    restart: unless-stopped

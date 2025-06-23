@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloading - Qobuz Squid Downloader</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #18181b;
+            border-radius: 12px;
+            padding: 30px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #fff;
+            text-align: center;
+        }
+        .progress-section {
+            margin: 30px 0;
+        }
+        .progress-label {
+            margin-bottom: 8px;
+            color: #b3b3b3;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        .track-progress {
+            margin-bottom: 16px;
+        }
+        .track-name {
+            color: #fff;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .status-text {
+            text-align: center;
+            color: #b3b3b3;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-top: 3px solid #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .phase-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 0 10px;
+        }
+        .phase {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #666;
+            font-size: 0.8em;
+        }
+        .phase.active {
+            color: #4ade80;
+        }
+        .phase.completed {
+            color: #22c55e;
+        }
+        .phase-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            margin-bottom: 4px;
+        }
+        .phase.active .phase-dot {
+            background: #4ade80;
+        }
+        .phase.completed .phase-dot {
+            background: #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Processing Album</h1>
+        
+        <div class="phase-indicator">
+            <div class="phase active" id="download-phase">
+                <div class="phase-dot"></div>
+                <span>Download</span>
+            </div>
+            <div class="phase" id="tag-phase">
+                <div class="phase-dot"></div>
+                <span>Tag Files</span>
+            </div>
+            <div class="phase" id="complete-phase">
+                <div class="phase-dot"></div>
+                <span>Complete</span>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-label">Overall Progress</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="overall-progress"></div>
+            </div>
+        </div>
+
+        <div class="progress-section" id="track-progress-section">
+            <div class="progress-label">Current Track</div>
+            <div class="track-progress">
+                <div class="track-name" id="current-track">Preparing download...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="track-progress"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="spinner"></div>
+        <div class="status-text" id="status-text">
+            Initializing download process...
+        </div>
+    </div>
+
+    <script>
+        // Simulate progress updates (in a real implementation, this would come from the server)
+        let currentPhase = 'download';
+        let overallProgress = 0;
+        let trackIndex = 0;
+        const tracks = [
+            'Track 1 - Example Song',
+            'Track 2 - Another Song', 
+            'Track 3 - Final Track'
+        ];
+
+        function updateProgress() {
+            if (currentPhase === 'download') {
+                if (overallProgress < 60) {
+                    overallProgress += Math.random() * 5;
+                    document.getElementById('overall-progress').style.width = overallProgress + '%';
+                    document.getElementById('track-progress').style.width = (overallProgress / 60 * 100) + '%';
+                    
+                    if (trackIndex < tracks.length) {
+                        document.getElementById('current-track').textContent = tracks[trackIndex];
+                        if (overallProgress > (trackIndex + 1) * 20) {
+                            trackIndex++;
+                        }
+                    }
+                    
+                    document.getElementById('status-text').textContent = 'Downloading tracks...';
+                } else {
+                    currentPhase = 'tag';
+                    document.getElementById('download-phase').classList.remove('active');
+                    document.getElementById('download-phase').classList.add('completed');
+                    document.getElementById('tag-phase').classList.add('active');
+                    document.getElementById('current-track').textContent = 'Adding metadata and cover art...';
+                    document.getElementById('status-text').textContent = 'Tagging files with MusicBrainz data...';
+                }
+            } else if (currentPhase === 'tag') {
+                if (overallProgress < 100) {
+                    overallProgress += Math.random() * 3;
+                    document.getElementById('overall-progress').style.width = overallProgress + '%';
+                    document.getElementById('track-progress').style.width = ((overallProgress - 60) / 40 * 100) + '%';
+                } else {
+                    currentPhase = 'complete';
+                    document.getElementById('tag-phase').classList.remove('active');
+                    document.getElementById('tag-phase').classList.add('completed');
+                    document.getElementById('complete-phase').classList.add('completed');
+                    document.getElementById('status-text').textContent = 'Processing complete! Redirecting...';
+                    document.querySelector('.spinner').style.display = 'none';
+                    
+                    // Redirect to done page after a short delay
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("done") }}';
+                    }, 2000);
+                    return;
+                }
+            }
+            
+            setTimeout(updateProgress, 500 + Math.random() * 1000);
+        }
+        
+        // Start the progress simulation
+        setTimeout(updateProgress, 1000);
+    </script>
+</body>
+</html>
