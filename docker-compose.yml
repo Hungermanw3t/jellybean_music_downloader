@@ -5,8 +5,12 @@ services:
     container_name: qobuz-downloader
     ports:
       - "5000:5000"
+    volumes:
+      - ./downloads:/app/downloads
     environment:
       - DOWNLOAD_BASE_DIR=/app/downloads
+      - PUID=1000
+      - PGID=1000
     tty: true
     stdin_open: true
     env_file:

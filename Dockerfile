@@ -6,18 +6,16 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV FLASK_ENV=production
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
 WORKDIR /app
 
-# Install system dependencies for ffmpeg, wget, and curl (for health checks)
+# Install system dependencies for ffmpeg, wget, curl, and gosu for user management
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
     wget \
     curl \
-    ca-certificates && \
+    ca-certificates \
+    gosu && \
     rm -rf /var/lib/apt/lists/*
 
 # Download and install fpcalc (Chromaprint)
@@ -36,9 +34,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your application code
 COPY . /app
 
-# Create downloads directory and set permissions
-RUN mkdir -p /app/downloads && \
-    chown -R appuser:appuser /app
+# Create downloads directory
+RUN mkdir -p /app/downloads
 
 # Expose a volume for downloads
 VOLUME ["/app/downloads"]
@@ -46,8 +43,23 @@ VOLUME ["/app/downloads"]
 # Expose the Flask app port
 EXPOSE 5000
 
-# Switch to non-root user
-USER appuser
+# Create entrypoint script to handle user permissions
+RUN echo '#!/bin/bash\n\
+PUID=${PUID:-1000}\n\
+PGID=${PGID:-1000}\n\
+\n\
+# Create group and user with specified IDs\n\
+groupadd -g $PGID appuser 2>/dev/null || true\n\
+useradd -u $PUID -g $PGID -s /bin/bash appuser 2>/dev/null || true\n\
+\n\
+# Ensure downloads directory has correct ownership\n\
+chown -R $PUID:$PGID /app/downloads\n\
+\n\
+# Execute the main command as the appuser\n\
+exec gosu appuser "$@"\n\
+' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
