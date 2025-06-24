@@ -145,6 +145,14 @@ def downloading():
 @app.route("/done")
 @login_required
 def done():
+    # Clear search results when download is complete
+    session.pop("found_items", None)
+    session.pop("search_term", None)
+    session.pop("search_type", None)
+    session.pop("selected_album", None)
+    session.pop("album_tracks", None)
+    session.pop("selected_track_indices", None)
+    session.pop("selected_mb_release_id", None)
     return render_template("done.html")
 
 async def download_and_tag_all(items_to_download, current_download_dir, selected_mb_release_id=None):
