@@ -1,17 +1,40 @@
+# Qobuz Music Downloader - Docker Compose Configuration
+# 
+# For Portainer deployment:
+# 1. Set HOST_DOWNLOADS_DIR to your desired download location
+# 2. Set LOGIN_PASSWORD to secure your web interface
+# 3. Adjust PUID/PGID to match your user (run 'id' command to find)
+#
+# Example environment variables in Portainer:
+# HOST_DOWNLOADS_DIR=/home/user/music
+# LOGIN_PASSWORD=your_secure_password
+# PUID=1000
+# PGID=1000
+
 services:
   qobuz:
     build: .
     image: qobuz-downloader
     container_name: qobuz-downloader
     ports:
-      - "5000:5000"
+      - "${HOST_PORT:-5000}:5000"
     volumes:
-      - ./downloads:/app/downloads
+      # Downloads directory - set HOST_DOWNLOADS_DIR in environment
+      - ${HOST_DOWNLOADS_DIR:-./downloads}:/app/downloads
     environment:
       - DOWNLOAD_BASE_DIR=/app/downloads
-      - PUID=1000
-      - PGID=1000
-    tty: true
-    stdin_open: true
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_DEBUG=${FLASK_DEBUG:-0}
+      - LOGIN_PASSWORD=${LOGIN_PASSWORD:-1234}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+      disable: ${HEALTHCHECK_DISABLE:-false}
     env_file:
       - .env
