@@ -5,7 +5,7 @@ import musicbrainzngs
 from functools import wraps
 
 import config
-from qobuz_api import get_music_info, get_album_details
+from qobuz_api import get_music_info, get_album_details, get_music_info_with_fallback
 from downloader import main_download_orchestrator
 from tagger import tag_file_with_musicbrainz_api, check_fpcalc_readiness, MusicBrainzRateLimiter
 from utils import clean_filename
@@ -51,7 +51,7 @@ def albums():
         if action == "search":
             search_term = request.form["search_term"]
             search_type = request.form["search_type"]
-            found_items = get_music_info(search_term, music_type=search_type, limit=20)
+            found_items = get_music_info_with_fallback(search_term, music_type=search_type, limit=100)
             session["found_items"] = found_items
             session["search_term"] = search_term
             session["search_type"] = search_type

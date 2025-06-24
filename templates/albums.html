@@ -491,11 +491,12 @@
                 <option value="albums" {% if search_type == 'albums' %}selected{% endif %}>Albums</option>
                 <option value="tracks" {% if search_type == 'tracks' %}selected{% endif %}>Tracks</option>
             </select>
-            <button type="submit" name="action" value="search">Search</button>
-        </form>        {% if found_items %}
+            <button type="submit" name="action" value="search">Search</button>        </form>
+        
+        {% if found_items %}
         <div class="albums-grid">
         {% for item in found_items %}
-            {% set album_id = item['id'] %}
+            {% set album_id = item['id']|string %}
             {% set seg1 = album_id[-2:] %}
             {% set seg2 = album_id[-4:-2] %}
             {% set img_url = 'https://static.qobuz.com/images/covers/' ~ seg1 ~ '/' ~ seg2 ~ '/' ~ album_id ~ '_230.jpg' %}            <div class="album-card" data-album-index="{{loop.index0}}" onclick="toggleAlbumSelection(this, {{loop.index0}})">
