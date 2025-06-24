@@ -4,6 +4,12 @@ load_dotenv()
 
 # Qobuz API Configuration
 BASE_URL = "https://eu.qobuz.squid.wtf"
+QOBUZ_API_BASE_URLS = [
+    "https://eu.qobuz.squid.wtf",
+    "https://us.qobuz.squid.wtf"
+]
+CURRENT_QOBUZ_API_INDEX = 0
+
 API_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "Accept": "application/json"
@@ -48,3 +54,8 @@ TRANSCODE_MAP = {
 
 # Logging
 LOGGING_ENABLED = os.getenv("LOGGING_ENABLED", "false").lower() == "true"
+
+def switch_qobuz_api_url():
+    global CURRENT_QOBUZ_API_INDEX, BASE_URL
+    CURRENT_QOBUZ_API_INDEX = (CURRENT_QOBUZ_API_INDEX + 1) % len(QOBUZ_API_BASE_URLS)
+    BASE_URL = QOBUZ_API_BASE_URLS[CURRENT_QOBUZ_API_INDEX]
