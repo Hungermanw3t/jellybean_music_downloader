@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for, session, flash
 import asyncio
 import os
+import threading
 import musicbrainzngs
 from functools import wraps
 
@@ -16,6 +17,10 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "change_this_secret_key_in_produc
 musicbrainzngs.set_useragent("QobuzSquidDownloader", "1.0", "your@email.com")
 
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "1234")
+
+# Global download lock to prevent concurrent downloads
+download_lock = threading.Lock()
+download_in_progress = False
 
 def login_required(f):
     @wraps(f)
@@ -41,6 +46,8 @@ def index():
 @app.route("/albums", methods=["GET", "POST"])
 @login_required
 def albums():
+    global download_in_progress
+    
     search_term = session.get("search_term", "")
     search_type = session.get("search_type", "albums")
     found_items = session.get("found_items", [])
@@ -51,40 +58,67 @@ def albums():
             search_term = request.form["search_term"]
             search_type = request.form["search_type"]
             found_items = get_music_info(search_term, music_type=search_type, limit=20)
-            session["found_items"] = found_items
+            
+            # Limit stored results to avoid large session cookies
+            # Store only essential data for each item
+            limited_items = []
+            for item in found_items[:15]:  # Limit to 15 items max
+                limited_items.append({
+                    'id': item.get('id'),
+                    'title': item.get('title', ''),
+                    'artist': item.get('artist', ''),
+                    'release_date': item.get('release_date', ''),
+                    'duration': item.get('duration', ''),
+                    'tracks_count': item.get('tracks_count', '')
+                })
+            
+            session["found_items"] = limited_items
             session["search_term"] = search_term
             session["search_type"] = search_type
         elif action == "select":
-            selected_album_idx = int(request.form["selected_album"])
-            selected_album = session.get("found_items", [])[selected_album_idx]
-            album_id = selected_album["id"]
-            album_data, tracks = get_album_details(album_id)
-            
-            if album_data is None:
-                flash("Failed to fetch album details. Please try again.")
-                return redirect(url_for("albums"))
-            
-            session["selected_album"] = {
-                "title": album_data.get("title", ""),
-                "artist": album_data.get("artist", {}).get("name", "")
-            }
-            session["album_tracks"] = [
-                {
-                    "id": t.get("id"),
-                    "title": t.get("title", "Unknown Title"),
-                    "artist": t.get("artist", album_data.get("artist", {}).get("name", "Unknown Artist")),
-                    "track_number": t.get("track_number")
+            try:
+                selected_album_idx = int(request.form["selected_album"])
+                found_items = session.get("found_items", [])
+                
+                # Validate that the index is within bounds
+                if not found_items or selected_album_idx < 0 or selected_album_idx >= len(found_items):
+                    flash("Invalid album selection. Please search again and try selecting an album.")
+                    return redirect(url_for("albums"))
+                
+                selected_album = found_items[selected_album_idx]
+                album_id = selected_album["id"]
+                album_data, tracks = get_album_details(album_id)
+                
+                if album_data is None:
+                    flash("Failed to fetch album details. Please try again.")
+                    return redirect(url_for("albums"))
+                
+                session["selected_album"] = {
+                    "title": album_data.get("title", ""),
+                    "artist": album_data.get("artist", {}).get("name", "")
                 }
-                for t in tracks
-            ]
-            session["selected_track_indices"] = list(range(len(tracks)))
-            return redirect(url_for("select_mb_release"))
+                session["album_tracks"] = [
+                    {
+                        "id": t.get("id"),
+                        "title": t.get("title", "Unknown Title"),
+                        "artist": t.get("artist", album_data.get("artist", {}).get("name", "Unknown Artist")),
+                        "track_number": t.get("track_number")
+                    }
+                    for t in tracks
+                ]
+                session["selected_track_indices"] = list(range(len(tracks)))
+                return redirect(url_for("select_mb_release"))
+            except (ValueError, KeyError, IndexError) as e:
+                print(f"Error processing album selection: {e}")
+                flash("Error processing your selection. Please try again.")
+                return redirect(url_for("albums"))
 
     return render_template(
         "albums.html",
         found_items=session.get("found_items", []),
         search_term=session.get("search_term", ""),
-        search_type=session.get("search_type", "albums")
+        search_type=session.get("search_type", "albums"),
+        download_in_progress=download_in_progress
     )
 
 @app.route("/select_mb_release", methods=["GET", "POST"])
@@ -110,6 +144,13 @@ def loading():
 @app.route("/downloading")
 @login_required
 def downloading():
+    global download_in_progress
+    
+    # Check if a download is already in progress
+    if download_in_progress:
+        flash("A download is already in progress. Please wait for it to complete before starting a new download.")
+        return redirect(url_for("albums"))
+    
     tracks = session.get("album_tracks", [])
     selected_indices = session.get("selected_track_indices", [])
     selected_mb_release_id = session.get("selected_mb_release_id")
@@ -125,6 +166,9 @@ def downloading():
     folder_name = f"{artist} - {title}"
     current_download_dir = os.path.join(config.DOWNLOAD_BASE_DIR, folder_name)
     
+    # Set download in progress flag
+    download_in_progress = True
+    
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -139,21 +183,11 @@ def downloading():
         flash("Download and tagging complete!")
     except Exception as e:
         flash(f"Error: {e}")
+    finally:
+        # Always clear the download in progress flag
+        download_in_progress = False
     
     return redirect(url_for("done"))
-
-@app.route("/done")
-@login_required
-def done():
-    # Clear search results when download is complete
-    session.pop("found_items", None)
-    session.pop("search_term", None)
-    session.pop("search_type", None)
-    session.pop("selected_album", None)
-    session.pop("album_tracks", None)
-    session.pop("selected_track_indices", None)
-    session.pop("selected_mb_release_id", None)
-    return render_template("done.html")
 
 async def download_and_tag_all(items_to_download, current_download_dir, selected_mb_release_id=None):
     file_ready_queue = asyncio.Queue()
@@ -196,6 +230,28 @@ async def download_and_tag_all(items_to_download, current_download_dir, selected
             fpcalc_ready_status,
             selected_mb_release_id
         )
+
+@app.route("/done")
+@login_required
+def done():
+    # Clear search results when download is complete
+    session.pop("found_items", None)
+    session.pop("search_term", None)
+    session.pop("search_type", None)
+    session.pop("selected_album", None)
+    session.pop("album_tracks", None)
+    session.pop("selected_track_indices", None)
+    session.pop("selected_mb_release_id", None)
+    return render_template("done.html")
+
+@app.route("/clear_session")
+@login_required
+def clear_session():
+    """Clear session data to reset the application state"""
+    session.clear()
+    session["authenticated"] = True  # Keep authentication
+    flash("Session cleared successfully.")
+    return redirect(url_for("albums"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

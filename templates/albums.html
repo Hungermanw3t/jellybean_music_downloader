@@ -420,11 +420,60 @@
             text-align: center;
             margin-top: 40px;
         }
+        /* Download status styles */
+        .download-status {
+            background: #2563eb;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+        }
+        
+        .download-status.warning {
+            background: #f59e0b;
+            box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);
+        }
+        
+        .download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #666;
+        }
+        
+        .download-btn:disabled:hover {
+            background: #666;
+            transform: none;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
-<body>
-    <div class="container">
+<body>    <div class="container">
         <h1>Qobuz Squid Downloader Web UI</h1>
+        
+        {% if download_in_progress %}
+        <div class="download-status warning">
+            <span class="status-indicator"></span>
+            Download in progress... Please wait for the current download to complete.
+        </div>
+        {% endif %}
         
         <form method="post" class="search-form">
             <input type="text" name="search_term" placeholder="Search term" required value="{{search_term|default('')}}">
@@ -455,8 +504,7 @@
                         <div class="hover-buttons">
                             <button type="button" class="hover-btn" title="Track List">
                                 <span>☰</span>
-                            </button>                            
-                                <button type="button" class="hover-btn download-btn" title="Download Album" data-album-index="{{loop.index0}}">
+                            </button>                                <button type="button" class="hover-btn download-btn" title="Download Album" data-album-index="{{loop.index0}}" {% if download_in_progress %}disabled{% endif %}>
                                 <span>⬇</span>
                             </button>
                         </div>
@@ -497,16 +545,47 @@
             form.appendChild(albumInput);
             document.body.appendChild(form);
             form.submit();
-        }
-
-        // Add event listeners when the page loads
+        }        // Add event listeners when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.download-btn').forEach(function(button) {
                 button.addEventListener('click', function() {
+                    // Don't do anything if button is disabled
+                    if (this.disabled) {
+                        return;
+                    }
                     const albumIndex = this.getAttribute('data-album-index');
                     downloadAlbum(albumIndex);
                 });
             });
+            
+            // Check download status periodically and update UI
+            function checkDownloadStatus() {
+                fetch('/download_status')
+                    .then(response => response.json())
+                    .then(data => {
+                        const downloadInProgress = data.download_in_progress;
+                        const statusDiv = document.querySelector('.download-status');
+                        const downloadButtons = document.querySelectorAll('.download-btn');
+                        
+                        downloadButtons.forEach(button => {
+                            button.disabled = downloadInProgress;
+                        });
+                        
+                        if (downloadInProgress && !statusDiv) {
+                            // Add status indicator if download started
+                            location.reload();
+                        } else if (!downloadInProgress && statusDiv) {
+                            // Remove status indicator if download finished
+                            location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Status check failed:', error);
+                    });
+            }
+            
+            // Check status every 5 seconds
+            setInterval(checkDownloadStatus, 5000);
         });
     </script>
 </body>
