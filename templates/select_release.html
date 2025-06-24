@@ -15,15 +15,37 @@
             align-items: center;
             justify-content: center;
         }
+        
         .container {
             max-width: 800px;
             width: 100%;
             text-align: center;
+            padding: 0 10px;
         }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+                align-items: flex-start;
+                padding-top: 30px;
+            }
+            
+            .container {
+                padding: 0 5px;
+            }
+        }
+        
         h1 {
             margin-bottom: 30px;
             color: #fff;
-            font-size: 1.8em;
+            font-size: clamp(1.4rem, 4vw, 1.8rem);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                margin-bottom: 20px;
+            }
         }        .release-list {
             list-style: none;
             padding: 0;
@@ -31,6 +53,15 @@
             max-height: 60vh;
             overflow-y: auto;
         }
+        
+        /* Mobile adjustments for release list */
+        @media (max-width: 768px) {
+            .release-list {
+                max-height: 50vh;
+                margin-bottom: 20px;
+            }
+        }
+        
         .release-item {
             background: #18181b;
             border-radius: 8px;
@@ -42,6 +73,20 @@
             cursor: pointer;
             position: relative;
         }
+        
+        @media (max-width: 768px) {
+            .release-item {
+                padding: 12px 15px;
+                border-radius: 6px;
+                margin-bottom: 6px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .release-item {
+                padding: 10px 12px;
+            }
+        }
         .release-item:hover {
             border: 2px solid #666;
             background: #222;
@@ -51,8 +96,7 @@
             background: #2a2a2a;        }.release-details {
             flex: 1;
             min-width: 0;
-        }
-        .release-title {
+        }        .release-title {
             color: #4af;
             text-decoration: none;
             font-weight: 600;
@@ -61,15 +105,25 @@
             word-break: break-word;
             position: relative;
             z-index: 10;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            line-height: 1.3;
         }
+        
         .release-title:hover {
             text-decoration: underline;
         }
+        
         .release-meta {
             color: #b3b3b3;
-            font-size: 0.85em;
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+            line-height: 1.4;
         }
-        .selected-indicator {
+        
+        @media (max-width: 480px) {
+            .release-meta {
+                line-height: 1.3;
+            }
+        }        .selected-indicator {
             position: absolute;
             top: 16px;
             right: 16px;
@@ -86,6 +140,26 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
+        
+        @media (max-width: 768px) {
+            .selected-indicator {
+                top: 12px;
+                right: 15px;
+                width: 18px;
+                height: 18px;
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .selected-indicator {
+                top: 10px;
+                right: 12px;
+                width: 16px;
+                height: 16px;
+                font-size: 10px;
+            }
+        }
         .release-item.selected .selected-indicator {
             opacity: 1;
         }        .button-container {
@@ -95,6 +169,15 @@
             align-items: center;
             flex-wrap: wrap;
         }
+        
+        @media (max-width: 600px) {
+            .button-container {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+        }
+        
         .use-release-btn {
             padding: 12px 24px;
             border: none;
@@ -102,20 +185,35 @@
             background: #4ade80;
             color: #fff;
             font-weight: bold;
-            font-size: 16px;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
             cursor: pointer;
             transition: all 0.2s;
             opacity: 0.5;
             pointer-events: none;
         }
-        .use-release-btn.enabled {
+        
+        @media (max-width: 600px) {
+            .use-release-btn {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .use-release-btn {
+                padding: 10px 20px;
+            }
+        }        .use-release-btn.enabled {
             opacity: 1;
             pointer-events: all;
         }
+        
         .use-release-btn:hover {
             background: #22c55e;
             transform: translateY(-1px);
         }
+        
         button {
             padding: 12px 24px;
             border: none;
@@ -123,20 +221,56 @@
             background: #fff;
             color: #18181b;
             font-weight: bold;
-            font-size: 16px;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
             cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .back-link {
+        
+        button:hover {
+            background: #e5e5e5;
+        }
+        
+        @media (max-width: 600px) {
+            button {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+        }        
+        @media (max-width: 480px) {
+            button {
+                padding: 10px 20px;
+            }
+        }
+          .back-link {
             color: #4af;
             text-decoration: none;
             padding: 12px 24px;
             border: 1px solid #4af;
             border-radius: 8px;
             display: inline-block;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
+            transition: all 0.2s ease;
         }
+        
         .back-link:hover {
             background: #4af;
             color: #18181b;
+        }
+        
+        @media (max-width: 600px) {
+            .back-link {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .back-link {
+                padding: 10px 20px;
+            }
         }
     </style>
 </head>

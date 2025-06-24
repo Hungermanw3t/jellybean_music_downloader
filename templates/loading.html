@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loading - Qobuz Squid Downloader</title>
-    <style>
-        body {
+    <style>        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0a0a0b 0%, #1a1a1d 100%);
             color: #fff;
@@ -16,6 +15,7 @@
             align-items: center;
             justify-content: center;
         }
+        
         .container {
             max-width: 500px;
             width: 100%;
@@ -24,7 +24,22 @@
             padding: 40px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             text-align: center;
+            margin: 0 10px;
         }
+        
+        /* Mobile adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .container {
+                padding: 25px;
+                border-radius: 12px;
+                margin: 0 5px;
+            }
+        }
+        
         h1 {
             margin-bottom: 30px;
             color: #fff;
@@ -33,35 +48,71 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 600;
-            font-size: 1.8em;
+            font-size: clamp(1.4rem, 4vw, 1.8rem);
         }
-        .loading-content {
+        
+        @media (max-width: 480px) {
+            h1 {
+                margin-bottom: 20px;
+            }
+        }        .loading-content {
             margin: 30px 0;
         }
+        
+        @media (max-width: 480px) {
+            .loading-content {
+                margin: 20px 0;
+            }
+        }
+        
         .spinner {
-            width: 60px;
-            height: 60px;
+            width: clamp(50px, 12vw, 60px);
+            height: clamp(50px, 12vw, 60px);
             border: 4px solid #333;
             border-top: 4px solid #4ade80;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 30px;
         }
+        
+        @media (max-width: 480px) {
+            .spinner {
+                margin-bottom: 20px;
+                border-width: 3px;
+            }
+        }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
         .status-text {
-            font-size: 1.1em;
+            font-size: clamp(1rem, 2.5vw, 1.1rem);
             color: #b3b3b3;
             margin-bottom: 20px;
-        }
-        .phase-indicator {
+        }        .phase-indicator {
             display: flex;
             justify-content: space-between;
             margin: 30px 0;
-            font-size: 0.85em;
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+            gap: 4px;
         }
+        
+        @media (max-width: 768px) {
+            .phase-indicator {
+                margin: 20px 0;
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .phase-indicator {
+                margin: 15px 0;
+            }
+        }
+        
         .phase {
             flex: 1;
             text-align: center;
@@ -71,6 +122,20 @@
             margin: 0 4px;
             transition: all 0.3s ease;
             border: 2px solid transparent;
+        }
+        
+        @media (max-width: 768px) {
+            .phase {
+                margin: 0;
+                padding: 10px 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .phase {
+                padding: 8px 6px;
+                border-radius: 4px;
+            }
         }
         .phase.active {
             background: #4ade80;

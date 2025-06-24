@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download Complete - Qobuz Squid Downloader</title>
-    <style>
-        body {
+    <style>        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0f0f0f;
             color: #fff;
             margin: 0;
-            padding: 20px 20px;
+            padding: 20px;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
         }
+        
         .container {
             max-width: 500px;
             width: 100%;
@@ -23,19 +23,35 @@
             border-radius: 12px;
             padding: 30px;
             text-align: center;
+            margin: 0 10px;
         }
+        
+        /* Mobile adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .container {
+                padding: 20px;
+                border-radius: 8px;
+                margin: 0 5px;
+            }
+        }
+        
         h1 {
             margin-bottom: 20px;
             color: #fff;
-        }
-        .success-icon {
-            width: 60px;
-            height: 60px;
+            font-size: clamp(1.4rem, 4vw, 1.8rem);
+        }        .success-icon {
+            width: clamp(50px, 12vw, 60px);
+            height: clamp(50px, 12vw, 60px);
             border: 3px solid #4ade80;
             border-radius: 50%;
             margin: 20px auto;
             position: relative;
         }
+        
         .success-icon::after {
             content: '✓';
             position: absolute;
@@ -43,22 +59,38 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: #4ade80;
-            font-size: 30px;
+            font-size: clamp(24px, 6vw, 30px);
             font-weight: bold;
         }
+        
         p {
             color: #b3b3b3;
             margin-bottom: 30px;
             line-height: 1.5;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
         }
-        .message {
+        
+        @media (max-width: 480px) {
+            p {
+                margin-bottom: 20px;
+            }
+        }        .message {
             color: #4ade80;
             margin-bottom: 30px;
             font-weight: 600;
+            font-size: clamp(0.95rem, 2.5vw, 1.1rem);
         }
+        
+        @media (max-width: 480px) {
+            .message {
+                margin-bottom: 20px;
+            }
+        }
+        
         .error {
             color: #ff4444;
         }
+        
         .back-link {
             color: #fff;
             text-decoration: none;
@@ -68,9 +100,18 @@
             border-radius: 8px;
             font-weight: bold;
             display: inline-block;
+            font-size: clamp(0.9rem, 2.2vw, 1rem);
+            transition: background-color 0.2s ease;
         }
+        
         .back-link:hover {
             background: #e5e5e5;
+        }
+        
+        @media (max-width: 480px) {
+            .back-link {
+                padding: 10px 20px;
+            }
         }
     </style>
 </head>
