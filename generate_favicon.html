@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Favicon Generator</title>
+</head>
+<body>
+    <canvas id="canvas" width="32" height="32" style="border: 1px solid #ccc;"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background circle with gradient
+        const gradient = ctx.createLinearGradient(0, 0, 32, 32);
+        gradient.addColorStop(0, '#4ade80');
+        gradient.addColorStop(1, '#22c55e');
+        
+        // Background
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(16, 16, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Border
+        ctx.strokeStyle = '#1a1a1d';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Music note and download icon
+        ctx.fillStyle = '#1a1a1d';
+        
+        // Note stem
+        ctx.fillRect(20, 8, 2, 12);
+        
+        // Note head
+        ctx.beginPath();
+        ctx.ellipse(18, 19, 3, 2, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Eighth note flag
+        ctx.beginPath();
+        ctx.moveTo(22, 8);
+        ctx.quadraticCurveTo(26, 10, 24, 14);
+        ctx.quadraticCurveTo(23, 12, 22, 11);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Download arrow
+        // Arrow shaft
+        ctx.fillRect(10, 12, 2, 6);
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(8, 16);
+        ctx.lineTo(11, 19);
+        ctx.lineTo(14, 16);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Convert to ICO format (this would need server-side processing)
+        console.log('Canvas drawn - would need server conversion to ICO');
+    </script>
+</body>
+</html>
