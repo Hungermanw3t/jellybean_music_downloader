@@ -6,12 +6,13 @@ import musicbrainzngs
 from functools import wraps
 
 import config
-from qobuz_api import get_music_info, get_album_details
+from qobuz_api import get_music_info, get_album_details, get_music_info_with_fallback
 from downloader import main_download_orchestrator
 from tagger import tag_file_with_musicbrainz_api, check_fpcalc_readiness, MusicBrainzRateLimiter
 from utils import clean_filename
+from release_matcher import ReleaseMatcher
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change_this_secret_key_in_production")
 
 musicbrainzngs.set_useragent("QobuzSquidDownloader", "1.0", "your@email.com")
@@ -127,14 +128,50 @@ def select_mb_release():
     album = session.get("selected_album", {})
     artist = album.get("artist", "")
     title = album.get("title", "")
-    releases = search_musicbrainz_releases(artist, title)
+    
+    # Try automatic release matching first
+    matcher = ReleaseMatcher()
+    tracks = session.get("album_tracks", [])
+    track_count = len(tracks)
+    
+    # Try to get release year from Qobuz data if available
+    release_year = None
+    try:
+        # This would need to be passed from the album selection
+        # For now, we'll skip year matching
+        pass
+    except:
+        pass
+    
+    auto_match = matcher.find_best_release(artist, title, track_count, release_year)
     
     if request.method == "POST":
-        selected_mb_id = request.form.get("selected_mb_release")
-        session["selected_mb_release_id"] = selected_mb_id
-        return redirect(url_for("loading"))
+        action = request.form.get("action")
         
-    return render_template("select_release.html", releases=releases, album=album)
+        if action == "auto_select" and auto_match:
+            # User confirmed automatic selection
+            session["selected_mb_release_id"] = auto_match['id']
+            return redirect(url_for("loading"))
+        elif action == "manual_select":
+            # User chose manual selection
+            selected_mb_id = request.form.get("selected_mb_release")
+            session["selected_mb_release_id"] = selected_mb_id
+            return redirect(url_for("loading"))
+        else:
+            # Regular manual selection
+            selected_mb_id = request.form.get("selected_mb_release")
+            session["selected_mb_release_id"] = selected_mb_id
+            return redirect(url_for("loading"))
+    
+    # Get manual options for fallback
+    releases = search_musicbrainz_releases(artist, title)
+    
+    return render_template(
+        "select_release.html", 
+        releases=releases, 
+        album=album,
+        auto_match=auto_match
+    )
 
 @app.route("/loading")
 @login_required

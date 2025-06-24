@@ -1,9 +1,13 @@
+<!-- Jinja Template -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+<head>    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search & Select Album - Qobuz Squid Downloader</title>    <style>        body {
+    <title>Search & Select Album - Qobuz Squid Downloader</title>
+    <link rel="preconnect" href="https://static.qobuz.com">
+    <link rel="dns-prefetch" href="https://via.placeholder.com">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}"><style>        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0a0a0b 0%, #1a1a1d 100%);
             color: #fff;
@@ -200,11 +204,85 @@
                 max-width: 150px;
                 border-radius: 8px;
             }
+        }        /* Desktop hover effects */
+        @media (min-width: 769px) {
+            .album-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            }
+            
+            .album-card:hover img {
+                transform: scale(1.05);
+                filter: blur(2px) brightness(0.7);
+            }
+            
+            .album-card:hover .hover-overlay {
+                opacity: 1;
+            }
+            
+            .hover-btn:hover {
+                background: rgba(255,255,255,0.25);
+                transform: scale(1.1);
+                border-color: rgba(255,255,255,0.5);
+            }
+            
+            .download-btn:hover {
+                background: rgba(34, 197, 94, 0.9);
+                border-color: rgba(34, 197, 94, 0.8);
+            }
         }
-        .album-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-        }        .album-card .album-image {
+        
+        /* Mobile touch-friendly interactions */
+        @media (max-width: 768px) {
+            .album-card {
+                border: 2px solid transparent;
+                position: relative;
+            }
+            
+            .album-card.selected {
+                border-color: #4ade80;
+                transform: translateY(-4px);
+                box-shadow: 0 4px 20px rgba(74, 222, 128, 0.3);
+            }
+            
+            .mobile-download-btn {
+                position: absolute;
+                bottom: 8px;
+                right: 8px;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: #4ade80;
+                border: none;
+                color: #fff;
+                font-size: 18px;
+                font-weight: bold;
+                cursor: pointer;
+                z-index: 10;
+                opacity: 0;
+                transform: scale(0.8);
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            }
+            
+            .album-card.selected .mobile-download-btn {
+                opacity: 1;
+                transform: scale(1);
+            }
+            
+            .mobile-download-btn:active {
+                transform: scale(0.95);
+                background: #22c55e;
+            }
+            
+            /* Hide desktop hover overlay on mobile */
+            .hover-overlay {
+                display: none;
+            }
+        }.album-card .album-image {
             position: relative;
             width: 100%;
             aspect-ratio: 1;
@@ -222,18 +300,12 @@
             .album-card .album-image {
                 border-radius: 8px 8px 0 0;
             }
-        }
-        .album-card img {
+        }        .album-card img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transition: all 0.3s ease;
-        }
-        .album-card:hover img {
-            transform: scale(1.05);
-            filter: blur(2px) brightness(0.7);
-        }
-        .album-card .hover-overlay {
+        }        .album-card .hover-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -247,9 +319,6 @@
             justify-content: space-between;
             padding: 16px;
             backdrop-filter: blur(4px);
-        }
-        .album-card:hover .hover-overlay {
-            opacity: 1;
         }
         .album-info-overlay {
             color: white;
@@ -332,20 +401,10 @@
             .hover-buttons {
                 gap: 6px;
             }
-        }
-        .hover-btn:hover {
-            background: rgba(255,255,255,0.25);
-            transform: scale(1.1);
-            border-color: rgba(255,255,255,0.5);
-        }
-        .download-btn {
+        }        .download-btn {
             background: rgba(74, 222, 128, 0.8);
             border-color: rgba(74, 222, 128, 0.6);
             color: #fff;
-        }
-        .download-btn:hover {
-            background: rgba(34, 197, 94, 0.9);
-            border-color: rgba(34, 197, 94, 0.8);
         }
         .album-info {
             position: relative;
@@ -481,17 +540,18 @@
                 <option value="albums" {% if search_type == 'albums' %}selected{% endif %}>Albums</option>
                 <option value="tracks" {% if search_type == 'tracks' %}selected{% endif %}>Tracks</option>
             </select>
-            <button type="submit" name="action" value="search">Search</button>
-        </form>        {% if found_items %}
+            <button type="submit" name="action" value="search">Search</button>        </form>
+        
+        {% if found_items %}
         <div class="albums-grid">
         {% for item in found_items %}
-            {% set album_id = item['id'] %}
+            {% set album_id = item['id']|string %}
             {% set seg1 = album_id[-2:] %}
             {% set seg2 = album_id[-4:-2] %}
-            {% set img_url = 'https://static.qobuz.com/images/covers/' ~ seg1 ~ '/' ~ seg2 ~ '/' ~ album_id ~ '_230.jpg' %}            <div class="album-card" data-album-index="{{loop.index0}}">
-                <div class="album-image">
-                    <img src="{{img_url}}" alt="Album Art"
-                         onerror="this.onerror=null;this.src='https://via.placeholder.com/200?text=No+Image';">
+            {% set img_url = 'https://static.qobuz.com/images/covers/' ~ seg1 ~ '/' ~ seg2 ~ '/' ~ album_id ~ '_230.jpg' %}            <div class="album-card" data-album-index="{{loop.index0}}" onclick="toggleAlbumSelection(this, {{loop.index0}})">
+                <div class="album-image">                    <img src="{{img_url}}" alt="Album Art" loading="lazy"
+                         onerror="this.onerror=null;this.src='https://via.placeholder.com/200x200/333/666?text=No+Image';"
+                         onload="this.style.opacity='1';" style="opacity:0;transition:opacity 0.3s ease;">
                     <div class="hover-overlay">
                         <div class="album-info-overlay">
                             <div class="album-title-overlay">{{item['title']}}</div>
@@ -504,11 +564,15 @@
                         <div class="hover-buttons">
                             <button type="button" class="hover-btn" title="Track List">
                                 <span>☰</span>
-                            </button>                                <button type="button" class="hover-btn download-btn" title="Download Album" data-album-index="{{loop.index0}}" {% if download_in_progress %}disabled{% endif %}>
+                            </button>                            <button type="button" class="hover-btn download-btn" title="Download Album" data-album-index="{{loop.index0}}" {% if download_in_progress %}disabled{% endif %}>
                                 <span>⬇</span>
                             </button>
                         </div>
                     </div>
+                    <!-- Mobile download button -->
+                    <button type="button" class="mobile-download-btn" onclick="event.stopPropagation(); downloadAlbum({{loop.index0}})">
+                        ⬇
+                    </button>
                 </div>
                 <div class="album-info">
                     <div class="album-title" title="{{item['title']}}">
@@ -525,6 +589,28 @@
             <p class="no-results">No albums found for <b>{{search_term}}</b>.</p>
         {% endif %}
     </div>    <script>
+        let selectedAlbumIndex = null;
+        
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+        
+        function toggleAlbumSelection(cardElement, albumIndex) {
+            if (!isMobile()) {
+                // On desktop, don't use selection mode
+                return;
+            }
+            
+            // Clear previous selection
+            document.querySelectorAll('.album-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Select current album
+            cardElement.classList.add('selected');
+            selectedAlbumIndex = albumIndex;
+        }
+        
         function downloadAlbum(albumIndex) {
             // Create a form and submit it to download the album
             const form = document.createElement('form');
@@ -547,45 +633,13 @@
             form.submit();
         }        // Add event listeners when the page loads
         document.addEventListener('DOMContentLoaded', function() {
+            // Desktop download button listeners
             document.querySelectorAll('.download-btn').forEach(function(button) {
                 button.addEventListener('click', function() {
-                    // Don't do anything if button is disabled
-                    if (this.disabled) {
-                        return;
-                    }
                     const albumIndex = this.getAttribute('data-album-index');
                     downloadAlbum(albumIndex);
                 });
             });
-            
-            // Check download status periodically and update UI
-            function checkDownloadStatus() {
-                fetch('/download_status')
-                    .then(response => response.json())
-                    .then(data => {
-                        const downloadInProgress = data.download_in_progress;
-                        const statusDiv = document.querySelector('.download-status');
-                        const downloadButtons = document.querySelectorAll('.download-btn');
-                        
-                        downloadButtons.forEach(button => {
-                            button.disabled = downloadInProgress;
-                        });
-                        
-                        if (downloadInProgress && !statusDiv) {
-                            // Add status indicator if download started
-                            location.reload();
-                        } else if (!downloadInProgress && statusDiv) {
-                            // Remove status indicator if download finished
-                            location.reload();
-                        }
-                    })
-                    .catch(error => {
-                        console.log('Status check failed:', error);
-                    });
-            }
-            
-            // Check status every 5 seconds
-            setInterval(checkDownloadStatus, 5000);
         });
     </script>
 </body>

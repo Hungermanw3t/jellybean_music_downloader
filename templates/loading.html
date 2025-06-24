@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+<head>    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loading - Qobuz Squid Downloader</title>
-    <style>        body {
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0a0a0b 0%, #1a1a1d 100%);
             color: #fff;
@@ -55,7 +57,9 @@
             h1 {
                 margin-bottom: 20px;
             }
-        }        .loading-content {
+        }
+        
+        .loading-content {
             margin: 30px 0;
         }
         
@@ -91,7 +95,9 @@
             font-size: clamp(1rem, 2.5vw, 1.1rem);
             color: #b3b3b3;
             margin-bottom: 20px;
-        }        .phase-indicator {
+        }
+        
+        .phase-indicator {
             display: flex;
             justify-content: space-between;
             margin: 30px 0;
@@ -137,6 +143,7 @@
                 border-radius: 4px;
             }
         }
+        
         .phase.active {
             background: #4ade80;
             color: #000;
@@ -172,6 +179,109 @@
             color: #b3b3b3;
             font-size: 0.9em;
         }
+        
+        .button-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        @media (max-width: 480px) {
+            .button-container {
+                margin-top: 20px;
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+          .cancel-btn {
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-block;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        /* Desktop hover effects */
+        @media (min-width: 481px) {
+            .cancel-btn:hover {
+                background: #444;
+                border-color: #666;
+                transform: translateY(-1px);
+            }
+            
+            .cancel-btn:active {
+                transform: translateY(0);
+            }
+        }
+        
+        /* Mobile interaction */
+        @media (max-width: 480px) {
+            .cancel-btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+                border: 2px solid #666;
+                transition: all 0.3s ease;
+            }
+            
+            .cancel-btn.selected {
+                background: #ff4444;
+                border-color: #ff6666;
+                color: #fff;
+            }
+            
+            .confirm-container {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #18181b;
+                border-top: 1px solid #333;
+                padding: 16px 20px;
+                transform: translateY(100%);
+                transition: transform 0.3s ease;
+                z-index: 1000;
+            }
+            
+            .confirm-container.show {
+                transform: translateY(0);
+            }
+            
+            .confirm-buttons {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
+            
+            .confirm-btn {
+                flex: 1;
+                max-width: 150px;
+                padding: 12px 16px;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 600;
+                text-align: center;
+                transition: all 0.2s ease;
+            }
+            
+            .confirm-yes {
+                background: #ff4444;
+                color: #fff;
+                border: 2px solid #ff4444;
+            }
+            
+            .confirm-no {
+                background: transparent;
+                color: #fff;
+                border: 2px solid #666;
+            }
+        }
     </style>
 </head>
 <body>
@@ -200,27 +310,94 @@
                     <div class="phase-title">Tag</div>
                     <div class="phase-desc">MusicBrainz</div>
                 </div>
+            </div>            <div class="button-container">
+                <a href="#" class="cancel-btn" onclick="return handleCancel(event)">Cancel Download</a>
             </div>
+        </div>
+    </div>
+
+    <!-- Mobile confirmation panel -->
+    <div class="confirm-container" id="confirm-container">
+        <div class="confirm-buttons">
+            <a href="{{ url_for('albums') }}" class="confirm-btn confirm-yes">Yes, Cancel</a>
+            <button class="confirm-btn confirm-no" onclick="hideConfirm()">Keep Downloading</button>
         </div>
     </div>
 
     <script>
         let progress = 0;
         let currentPhase = 0;
+        let cancelled = false;
+        
         const statusTexts = [
             'Validating MusicBrainz release selection...',
             'Creating download directory...',
             'Fetching track URLs from Qobuz CDN...',
             'Initializing download process...',
             'Ready to start downloading tracks...'
-        ];
-
-        function updateProgress() {
-            progress += Math.random() * 15 + 10;
+        ];        function isMobile() {
+            return window.innerWidth <= 480;
+        }        function handleCancel(event) {
+            event.preventDefault();
             
-            if (progress >= 100) {
-                // Redirect to actual downloading page
-                window.location.href = '/downloading';
+            console.log('Cancel button clicked, isMobile:', isMobile());
+            
+            if (isMobile()) {
+                // Mobile: Show selection state and bottom confirmation
+                const cancelBtn = event.target;
+                cancelBtn.classList.add('selected');
+                showConfirm();
+                return false;
+            } else {
+                // Desktop: Show traditional confirm dialog
+                if (confirm('Are you sure you want to cancel the download?')) {
+                    cancelled = true;
+                    console.log('Redirecting to albums page');
+                    window.location.href = "{{ url_for('albums') }}";
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        function showConfirm() {
+            console.log('Showing mobile confirmation panel');
+            document.getElementById('confirm-container').classList.add('show');
+        }
+
+        function hideConfirm() {
+            console.log('Hiding mobile confirmation panel');
+            document.getElementById('confirm-container').classList.remove('show');
+            const cancelBtn = document.querySelector('.cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.classList.remove('selected');
+            }
+        }
+
+        function confirmCancel() {
+            if (confirm('Are you sure you want to cancel the download?')) {
+                cancelled = true;
+                return true;
+            }
+            return false;
+        }        function updateProgress() {
+            if (cancelled) {
+                return;
+            }
+            
+            progress += Math.random() * 15 + 10;
+              if (progress >= 100) {
+                // Add a small delay before redirect to ensure everything is ready
+                console.log('Progress complete, redirecting to downloading page...');
+                setTimeout(() => {
+                    try {
+                        window.location.href = '/downloading';
+                    } catch (error) {
+                        console.error('Redirect failed:', error);
+                        // Fallback redirect
+                        window.location.replace('/downloading');
+                    }
+                }, 500);
                 return;
             }
             
@@ -243,10 +420,20 @@
             
             // Continue updating with more realistic timing
             setTimeout(updateProgress, Math.random() * 800 + 400);
-        }
-
-        // Start the loading simulation after a brief delay
-        setTimeout(updateProgress, 800);
+        }        // Start the loading simulation after a brief delay
+        console.log('Starting loading simulation...');
+        setTimeout(() => {
+            console.log('Beginning updateProgress cycle');
+            updateProgress();
+        }, 800);
+        
+        // Add emergency fallback to prevent infinite loading
+        setTimeout(() => {
+            if (!cancelled && progress < 100) {
+                console.log('Emergency fallback triggered - forcing redirect');
+                window.location.href = '/downloading';
+            }
+        }, 10000); // 10 second max loading time
     </script>
 </body>
 </html>
